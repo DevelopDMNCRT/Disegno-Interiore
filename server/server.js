@@ -122,7 +122,7 @@ app.get('/api/public/productos', async (req, res) => {
     res.json(result.rows)
   } catch (err) {
     console.error('Error al obtener productos públicos:', err)
-    res.status(500).json({ error: 'Error interno del servidor' })
+    res.status(500).json({ error: err.message, detail: err.detail || null, code: err.code || null })
   }
 })
 
@@ -204,6 +204,17 @@ app.use('/api/pedidos',    verifyToken, pedidosRouter)
 // Ruta de salud
 app.get('/api/health', (req, res) => {
   res.json({ estado: 'ok', hora: new Date().toISOString() })
+})
+
+// Ruta de debug de BD
+app.get('/api/debug/db', async (req, res) => {
+  try {
+    const pool = require('./db')
+    const r = await pool.query('SELECT NOW() as now')
+    res.json({ ok: true, time: r.rows[0].now, db_url_prefix: (process.env.DATABASE_URL || '').substring(0, 40) })
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message, code: err.code })
+  }
 })
 
 // Arrancar servidor (solo en local, Vercel ignora app.listen)
