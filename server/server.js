@@ -97,7 +97,7 @@ const initDB = async () => {
 
   } catch (err) {
     console.error('❌ Error al inicializar la base de datos:', err)
-    process.exit(1)
+    // No llamar process.exit(1) en entorno serverless (Vercel)
   }
 }
 
@@ -206,9 +206,17 @@ app.get('/api/health', (req, res) => {
   res.json({ estado: 'ok', hora: new Date().toISOString() })
 })
 
-// Arrancar servidor
-initDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor API corriendo en http://localhost:${PORT}`)
+// Arrancar servidor (solo en local, Vercel ignora app.listen)
+if (process.env.VERCEL !== '1') {
+  initDB().then(() => {
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor API corriendo en http://localhost:${PORT}`)
+    })
   })
-})
+} else {
+  // En Vercel: inicializar BD en background sin bloquear
+  initDB().catch(err => console.error('initDB error:', err))
+}
+
+// Exportar para Vercel serverless
+module.exports = app
